@@ -4,7 +4,33 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gestión de Inventario</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js">
+function exportCSV() {
+  // Export movements
+  const headers = ['Fecha','Producto','Produccion','Tipo','Cantidad','Unidad','Precio','Total','Notas','Usuario'];
+  const rows = movements.map(m => {
+    const p = products.find(x=>x.id===m.pid);
+    const total = (Number(m.price||0)*Number(m.qty||0)).toFixed(0);
+    return [
+      m.date, p?p.name:m.pid, m.proc||'', m.tipo,
+      m.qty, p?p.unit:'', m.price||'', total, m.notes||'', m.user||''
+    ].map(v => '"'+String(v).replace(/"/g,'""')+'"').join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'ANMICODA_movimientos_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click(); URL.revokeObjectURL(url);
+  toast('CSV exportado ✓','success');
+}
+
+function confirmReset() {
+  if (confirm('¿Seguro que quieres borrar TODOS los datos? Esta acción no se puede deshacer.')) {
+    localStorage.clear(); location.reload();
+  }
+}
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
@@ -40,7 +66,7 @@ body { background: var(--bg); color: var(--text); font-family: var(--font); font
 /* ── SETUP OVERLAY ── */
 #setup-overlay {
   position: fixed; inset: 0; background: rgba(240,247,255,.96);
-  display: none; align-items: center; justify-content: center; z-index: 999;
+  display: none;
 }
 .setup-box {
   background: var(--surface); border: 1.5px solid var(--border);
@@ -303,9 +329,9 @@ tbody tr:hover { background: var(--surface2); }
       <span id="biz-name">Inventario</span>
     </div>
     <div class="hdr-right">
-      <button class="btn-sm" onclick="syncAll()"><span class="sdot" id="sdot"></span>Sincronizar</button>
+      <button class="btn-sm" onclick="exportCSV()">⬇️ Exportar CSV</button>
       <button class="btn-sm" onclick="openAddProduct()">+ Producto</button>
-      <button class="btn-sm" onclick="resetApp()" title="Configuración">⚙️</button>
+      <button class="btn-sm" onclick="confirmReset()" title="Borrar todos los datos">🗑️</button>
     </div>
   </header>
 
@@ -632,10 +658,9 @@ function doDemo() {
   buildDemoData(); launch(biz);
 }
 function launch(biz) {
-  document.getElementById('setup-overlay').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   document.getElementById('biz-name').textContent = biz;
-  IS_DEMO ? renderAll() : syncAll();
+  renderAll();
 }
 function resetApp() { localStorage.clear(); location.reload(); }
 
@@ -690,46 +715,13 @@ window.addEventListener('load', () => {
 
 // ─── SYNC ──────────────────────────────────────────────────────────────
 async function syncAll() {
-  if (IS_DEMO) { loadLocal(); renderAll(); return; }
-  setSpin(true);
-  if (typeof google !== 'undefined' && google.script) {
-    google.script.run
-      .withSuccessHandler(function(res) {
-        try {
-          const d = JSON.parse(res);
-          products  = d.products  || [];
-          movements = d.movements || [];
-          saveLocal(); renderAll(); toast('Sincronizado ✓','success');
-        } catch(e) { loadLocal(); renderAll(); }
-        setSpin(false);
-      })
-      .withFailureHandler(function() {
-        loadLocal(); renderAll(); toast('Error al sincronizar','error');
-        setSpin(false);
-      })
-      .getAllDataFromClient();
-  } else {
-    loadLocal(); renderAll(); setSpin(false);
-  }
+  loadLocal();
+  renderAll();
+  toast('Datos actualizados ✓','success');
 }
 async function push(action, payload) {
-  if (IS_DEMO) { saveLocal(); renderAll(); return {ok:true}; }
   saveLocal();
-  return new Promise(function(resolve) {
-    if (typeof google !== 'undefined' && google.script) {
-      if (action === 'addMovement') {
-        google.script.run
-          .withSuccessHandler(function() { resolve({ok:true}); })
-          .withFailureHandler(function() { resolve({ok:true,local:true}); })
-          .saveMovementFromClient(JSON.stringify(payload.movement), JSON.stringify(payload.products));
-      } else if (action === 'addProduct') {
-        google.script.run
-          .withSuccessHandler(function() { resolve({ok:true}); })
-          .withFailureHandler(function() { resolve({ok:true,local:true}); })
-          .saveProductFromClient(JSON.stringify(payload.product));
-      } else { resolve({ok:true}); }
-    } else { resolve({ok:true,local:true}); }
-  });
+  return {ok:true};
 }
 function setSpin(v) { document.getElementById('sdot').className='sdot'+(v?' spin':''); }
 
@@ -1089,63 +1081,5 @@ function toast(msg, type='info') {
 }
 </script>
 
-<!--
-══════════════════════════════════════════════════════════════════
-GOOGLE APPS SCRIPT — pega esto en Extensiones → Apps Script
-══════════════════════════════════════════════════════════════════
-
-function doGet(e) {
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var prodSheet = ss.getSheetByName('Productos') || ss.insertSheet('Productos');
-  var movSheet  = ss.getSheetByName('Movimientos') || ss.insertSheet('Movimientos');
-  var pData = prodSheet.getDataRange().getValues();
-  var mData = movSheet.getDataRange().getValues();
-  var products = [];
-  for (var i=1;i<pData.length;i++) {
-    var r=pData[i];
-    if(r[0]) products.push({id:r[0],name:r[1],proteina:r[2],tipo:r[3],unit:r[4],fmt:r[5],stock:Number(r[6]),min:Number(r[7])});
-  }
-  var movements = [];
-  for (var j=1;j<mData.length;j++) {
-    var r=mData[j];
-    if(r[0]) movements.push({id:r[0],date:r[1],pid:r[2],proc:r[3],tipo:r[4],qty:Number(r[5]),price:Number(r[6]),notes:r[7],user:r[8]});
-  }
-  return ContentService.createTextOutput(JSON.stringify({products:products,movements:movements}))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-function doPost(e) {
-  var data = JSON.parse(e.postData.contents);
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  if (data.action === 'addMovement') {
-    var s = ss.getSheetByName('Movimientos') || ss.insertSheet('Movimientos');
-    if(s.getLastRow()===0) s.appendRow(['ID','Fecha','Producto ID','Proceso','Tipo','Cantidad','Precio','Notas','Usuario']);
-    var m=data.movement;
-    s.appendRow([m.id,m.date,m.pid,m.proc,m.tipo,m.qty,m.price,m.notes,m.user]);
-    if(data.products) {
-      var ps=ss.getSheetByName('Productos');
-      if(ps){var pd=ps.getDataRange().getValues();
-        data.products.forEach(function(p){for(var i=1;i<pd.length;i++){if(pd[i][0]===p.id){ps.getRange(i+1,7).setValue(p.stock);break;}}});
-      }
-    }
-  }
-  if (data.action === 'addProduct') {
-    var s2=ss.getSheetByName('Productos')||ss.insertSheet('Productos');
-    if(s2.getLastRow()===0) s2.appendRow(['ID','Nombre','Proteina','Tipo','Unidad','Formato','Stock','Stock Mínimo']);
-    var p2=data.product;
-    s2.appendRow([p2.id,p2.name,p2.proteina,p2.tipo,p2.unit,p2.fmt,p2.stock,p2.min]);
-  }
-  return ContentService.createTextOutput(JSON.stringify({ok:true}))
-    .setMimeType(ContentService.MimeType.JSON);
-}
-
-INSTRUCCIONES:
-1. Implementar → Nueva implementación
-2. Tipo: Aplicación web
-3. Ejecutar como: Yo
-4. Acceso: Cualquier usuario
-5. Copiar URL → pegar en la app
-══════════════════════════════════════════════════════════════════
--->
 </body>
 </html>
