@@ -164,11 +164,11 @@ main { flex: 1; overflow-y: auto; padding: 18px 20px 10px; }
 
 /* ── MERMA BANNER ── */
 .merma-banner {
-  background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%);
-  border: 1.5px solid #fde68a; border-radius: var(--r); padding: 14px 18px 18px;
+  background: #e0f0ff;
+  border: 1.5px solid #93c5fd; border-radius: var(--r); padding: 14px 18px 18px;
   margin-bottom: 14px;
 }
-.merma-banner-title { font-size: 13px; font-weight: 700; color: #92400e; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+.merma-banner-title { font-size: 13px; font-weight: 700; color: #1d4ed8; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
 
 /* ── CHART WRAPPERS ── */
 .ch { position: relative; }
@@ -461,6 +461,46 @@ tbody tr:hover { background: var(--surface2); }
       </div>
       <div class="stock-grid" id="stock-grid"></div>
       <div id="stock-empty" class="empty" style="display:none">Sin productos registrados</div>
+
+    <!-- ═══ PROTEINAS ═══ -->
+    <div id="tab-proteinas" class="tab-panel">
+      <div class="page-hdr">
+        <h2>Proteinas y precios netos</h2>
+        <div style="display:flex;gap:8px;align-items:center">
+          <select id="prot-filter" onchange="renderProteinas()" style="padding:7px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--font);font-size:13px;outline:none">
+            <option value="">Todas las proteinas</option>
+            <option value="prot-salmon">Salmon</option>
+            <option value="prot-pollo">Pollo</option>
+            <option value="prot-jaiba">Jaiba</option>
+            <option value="prot-tocino">Tocino</option>
+            <option value="prot-camaron">Camaron</option>
+            <option value="prot-pulpo">Pulpo</option>
+            <option value="prot-carne">Carne</option>
+          </select>
+          <select id="tipo-filter" onchange="renderProteinas()" style="padding:7px 11px;border-radius:8px;border:1.5px solid var(--border);background:var(--surface);color:var(--text);font-family:var(--font);font-size:13px;outline:none">
+            <option value="">Todos los tipos</option>
+            <option value="Producto terminado">Productos terminados</option>
+            <option value="Materia prima">Materias primas</option>
+          </select>
+        </div>
+      </div>
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>Producto</th>
+              <th>Tipo</th>
+              <th>Proteina</th>
+              <th>Unidad</th>
+              <th>Formato</th>
+              <th>Precio neto</th>
+              <th>Accion</th>
+            </tr>
+          </thead>
+          <tbody id="proteinas-tb"></tbody>
+        </table>
+      </div>
+    </div>
     </div>
 
   </main>
@@ -476,6 +516,9 @@ tbody tr:hover { background: var(--surface2); }
     <button class="nav-btn" id="nb-stock" onclick="goTab('stock',this)">
       <span class="ni">📦</span>Stock
     </button>
+    <button class="nav-btn" id="nb-proteinas" onclick="goTab('proteinas',this)">
+      <span class="ni">🥩</span>Proteinas
+    </button>
   </nav>
 </div>
 
@@ -483,22 +526,38 @@ tbody tr:hover { background: var(--surface2); }
 <div class="overlay" id="ov-mov" onclick="if(event.target===this)closeMov()">
   <div class="modal">
     <div class="modal-title"><span id="mov-icon">📥</span><span id="mov-ttl">Registrar entrada</span></div>
+
+    <label>Proteina</label>
+    <select id="mov-proteina" onchange="onProteinaChange()">
+      <option value="">Seleccionar proteina...</option>
+      <option value="prot-salmon">Salmon</option>
+      <option value="prot-pollo">Pollo</option>
+      <option value="prot-jaiba">Jaiba</option>
+      <option value="prot-tocino">Tocino</option>
+      <option value="prot-camaron">Camaron</option>
+      <option value="prot-pulpo">Pulpo</option>
+      <option value="prot-carne">Carne</option>
+    </select>
+
     <label>Producto</label>
-    <select id="mov-prod"></select>
-    <div id="mov-prod-section" style="display:none">
-      <label>Producción asociada</label>
+    <select id="mov-prod" onchange="onProductChange()" disabled>
+      <option value="">Primero selecciona proteina</option>
+    </select>
+
+    <div id="mov-prod-section" style="display:none;margin-top:10px">
+      <label>Produccion asociada</label>
       <select id="mov-prod-type">
-        <option value="">Sin producción asociada</option>
-        <option value="salmon relleno">Salmón relleno</option>
-        <option value="salmon ceviche">Salmón ceviche</option>
-        <option value="salmon molde">Salmón molde</option>
-        <option value="sashimi salmón">Sashimi salmón</option>
+        <option value="">Sin produccion asociada</option>
+        <option value="salmon relleno">Salmon relleno</option>
+        <option value="salmon ceviche">Salmon ceviche</option>
+        <option value="salmon molde">Salmon molde</option>
+        <option value="sashimi salmon">Sashimi salmon</option>
         <option value="pollo filetado">Pollo filetado</option>
         <option value="pollo apanado">Pollo apanado</option>
         <option value="pollo molde">Pollo molde</option>
         <option value="pollo teriyaki">Pollo teriyaki</option>
-        <option value="camaron estirado">Camarón estirado</option>
-        <option value="camaron apanado">Camarón apanado</option>
+        <option value="camaron estirado">Camaron estirado</option>
+        <option value="camaron apanado">Camaron apanado</option>
         <option value="jaiba relleno">Jaiba relleno</option>
         <option value="chupe de jaiba">Chupe de jaiba</option>
         <option value="tocino relleno">Tocino relleno</option>
@@ -507,10 +566,25 @@ tbody tr:hover { background: var(--surface2); }
         <option value="carne molde">Carne molde</option>
       </select>
     </div>
-    <label>Cantidad</label>
-    <input type="number" id="mov-qty" min="0.01" step="0.01" placeholder="0.00">
-    <label id="mov-plbl">Precio unitario</label>
-    <input type="number" id="mov-price" min="0" step="0.01" placeholder="0.00">
+
+    <div id="mov-single">
+      <label>Cantidad <span id="mov-unit-lbl" style="color:var(--blue-600);font-weight:700">(kg)</span></label>
+      <input type="number" id="mov-qty" min="0.01" step="0.01" placeholder="0.00">
+    </div>
+
+    <div id="mov-dual" style="display:none">
+      <div style="background:var(--blue-100);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--blue-700);margin-top:10px;margin-bottom:4px">
+        Este producto registra <strong>unidades</strong> y <strong>kg totales</strong> por separado
+      </div>
+      <label>Cantidad (unidades)</label>
+      <input type="number" id="mov-qty-u" min="1" step="1" placeholder="Numero de unidades">
+      <label>Peso total (kg)</label>
+      <input type="number" id="mov-qty-kg" min="0.01" step="0.01" placeholder="Peso total en kg">
+    </div>
+
+    <label id="mov-plbl">Precio neto unitario <span id="mov-price-ref" style="font-size:11px;color:var(--blue-600)"></span></label>
+    <input type="number" id="mov-price" min="0" step="1" placeholder="0">
+
     <label>Notas</label>
     <textarea id="mov-notes" placeholder="Opcional..."></textarea>
     <label>Registrado por</label>
@@ -518,6 +592,22 @@ tbody tr:hover { background: var(--surface2); }
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeMov()">Cancelar</button>
       <button class="btn-ok" id="mov-ok" onclick="saveMov()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRECIO -->
+<div class="overlay" id="ov-precio" onclick="if(event.target===this)closePrecio()">
+  <div class="modal">
+    <div class="modal-title">💰 Editar precio neto</div>
+    <input type="hidden" id="precio-id">
+    <div id="precio-prod-name" style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:16px;padding:12px;background:var(--surface2);border-radius:8px"></div>
+    <label>Precio neto por unidad / kg</label>
+    <input type="number" id="precio-val" min="0" step="1" placeholder="0">
+    <div style="font-size:12px;color:var(--muted);margin-top:6px">Ingresa el precio sin IVA en pesos chilenos</div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closePrecio()">Cancelar</button>
+      <button class="btn-ok bok-ven" onclick="savePrecio()">Guardar precio</button>
     </div>
   </div>
 </div>
@@ -635,6 +725,55 @@ const INIT_PRODUCTS = [
   {id:'pt16',name:'Carne molde',proteina:'carne',tipo:'Producto terminado',unit:'unidades',fmt:'Unidad 500g',stock:0,min:15},
 ];
 
+
+const CATALOG = {
+  proteinas: [
+    {id:'prot-salmon',  name:'Salmon'},
+    {id:'prot-pollo',   name:'Pollo'},
+    {id:'prot-jaiba',   name:'Jaiba'},
+    {id:'prot-tocino',  name:'Tocino'},
+    {id:'prot-camaron', name:'Camaron'},
+    {id:'prot-pulpo',   name:'Pulpo'},
+    {id:'prot-carne',   name:'Carne'},
+  ],
+  productos: [
+    {id:'pt1',  proteina:'prot-salmon',  name:'Salmon relleno',    unit:'kg',       dual:false, fmt:'Bolsas de 2 kg',         tipo:'Producto terminado'},
+    {id:'pt2',  proteina:'prot-salmon',  name:'Salmon ceviche',    unit:'kg',       dual:false, fmt:'Bolsa de 1 kg',          tipo:'Producto terminado'},
+    {id:'pt3',  proteina:'prot-salmon',  name:'Salmon molde',      unit:'kg',       dual:true,  fmt:'Bolsas 10 unidades',     tipo:'Producto terminado'},
+    {id:'pt4',  proteina:'prot-salmon',  name:'Sashimi salmon',    unit:'kg',       dual:true,  fmt:'Unitario',               tipo:'Producto terminado'},
+    {id:'pt5',  proteina:'prot-pollo',   name:'Pollo filetado',    unit:'kg',       dual:false, fmt:'Granel en kg',           tipo:'Producto terminado'},
+    {id:'pt6',  proteina:'prot-pollo',   name:'Pollo apanado',     unit:'kg',       dual:false, fmt:'Granel en kg',           tipo:'Producto terminado'},
+    {id:'pt7',  proteina:'prot-pollo',   name:'Pollo molde',       unit:'unidades', dual:false, fmt:'Unidad 500g',            tipo:'Producto terminado'},
+    {id:'pt8',  proteina:'prot-pollo',   name:'Pollo teriyaki',    unit:'unidades', dual:false, fmt:'Bolsa 28 unidades',      tipo:'Producto terminado'},
+    {id:'pt9',  proteina:'prot-camaron', name:'Camaron estirado',  unit:'kg',       dual:false, fmt:'Granel en kg',           tipo:'Producto terminado'},
+    {id:'pt10', proteina:'prot-camaron', name:'Camaron apanado',   unit:'kg',       dual:false, fmt:'Granel en kg',           tipo:'Producto terminado'},
+    {id:'pt11', proteina:'prot-jaiba',   name:'Jaiba relleno',     unit:'unidades', dual:false, fmt:'Bolsa 10 unidades',      tipo:'Producto terminado'},
+    {id:'pt12', proteina:'prot-jaiba',   name:'Chupe de jaiba',    unit:'unidades', dual:false, fmt:'Bolsa 5 unidades',       tipo:'Producto terminado'},
+    {id:'pt13', proteina:'prot-tocino',  name:'Tocino relleno',    unit:'unidades', dual:false, fmt:'Bolsa 2 unidades',       tipo:'Producto terminado'},
+    {id:'pt14', proteina:'prot-pulpo',   name:'Pulpo relleno',     unit:'unidades', dual:false, fmt:'Bolsa 10 unidades',      tipo:'Producto terminado'},
+    {id:'pt15', proteina:'prot-carne',   name:'Carne relleno',     unit:'unidades', dual:false, fmt:'Bolsa 10 unidades',      tipo:'Producto terminado'},
+    {id:'pt16', proteina:'prot-carne',   name:'Carne molde',       unit:'unidades', dual:false, fmt:'Unidad 500g',            tipo:'Producto terminado'},
+    {id:'mp1',  proteina:'prot-camaron', name:'Camaron',           unit:'kg',       dual:false, fmt:'Caja 100kg / bolsas 1kg',tipo:'Materia prima'},
+    {id:'mp2',  proteina:'prot-carne',   name:'Carne vacuno',      unit:'kg',       dual:false, fmt:'Bolsas de 3 kg',         tipo:'Materia prima'},
+    {id:'mp3',  proteina:'prot-pollo',   name:'Pollo pechuga',     unit:'kg',       dual:false, fmt:'Caja 10 kg congelado',   tipo:'Materia prima'},
+    {id:'mp4',  proteina:'prot-tocino',  name:'Tocino congelado',  unit:'kg',       dual:false, fmt:'Bolsas 500g',            tipo:'Materia prima'},
+    {id:'mp5',  proteina:'prot-pulpo',   name:'Pulpo congelado',   unit:'kg',       dual:false, fmt:'Bolsas de kg',           tipo:'Materia prima'},
+    {id:'mp6',  proteina:'prot-jaiba',   name:'Jaiba',             unit:'kg',       dual:false, fmt:'Bolsas 500g',            tipo:'Materia prima'},
+    {id:'mp7',  proteina:'prot-salmon',  name:'Salmon sin piel',   unit:'kg',       dual:false, fmt:'Cajas 10kg filetes',     tipo:'Materia prima'},
+    {id:'mp8',  proteina:'prot-salmon',  name:'Salmon con piel',   unit:'kg',       dual:false, fmt:'Cajas 10kg con piel',    tipo:'Materia prima'},
+  ]
+};
+
+// Load/save prices from localStorage
+function loadPrices() {
+  try { return JSON.parse(localStorage.getItem('anmicoda_prices') || '{}'); } catch { return {}; }
+}
+function savePrice(id, precio) {
+  const p = loadPrices(); p[id] = Number(precio);
+  localStorage.setItem('anmicoda_prices', JSON.stringify(p));
+}
+function getPrice(id) { return loadPrices()[id] || 0; }
+
 // ─── STATE ─────────────────────────────────────────────────────────────
 let GAS_URL = '', IS_DEMO = false;
 let products = [], movements = [];
@@ -725,12 +864,117 @@ async function push(action, payload) {
 }
 function setSpin(v) { document.getElementById('sdot').className='sdot'+(v?' spin':''); }
 
+// ─── PROTEINAS & PRECIOS ─────────────────────────────
+function renderProteinas() {
+  var tb0 = document.getElementById("proteinas-tb"); if(tb0) tb0.innerHTML="";
+  var pf = document.getElementById('prot-filter') ? document.getElementById('prot-filter').value : '';
+  var tf = document.getElementById('tipo-filter') ? document.getElementById('tipo-filter').value : '';
+  var prices = loadPrices();
+  var list = CATALOG.productos;
+  if (pf) list = list.filter(function(p){ return p.proteina === pf; });
+  if (tf) list = list.filter(function(p){ return p.tipo === tf; });
+  var tb = document.getElementById('proteinas-tb');
+  if (!tb) return;
+  var protName = {
+    'prot-salmon':'Salmon','prot-pollo':'Pollo','prot-jaiba':'Jaiba',
+    'prot-tocino':'Tocino','prot-camaron':'Camaron','prot-pulpo':'Pulpo','prot-carne':'Carne'
+  };
+  var tipoCls = {'Producto terminado':'b-blue','Materia prima':'b-green'};
+  if (list.length === 0) {
+    tb.innerHTML = '<tr><td colspan="7" class="empty">Sin productos</td></tr>';
+    return;
+  }
+  var rows = '';
+  for (var i=0; i<list.length; i++) {
+    var p = list[i];
+    var precio = prices[p.id] || 0;
+    var precioFmt = precio > 0 ? '$'+precio.toLocaleString('es-CL') : '<em style="color:var(--muted)">Sin precio</em>';
+    var badgeCls = tipoCls[p.tipo] || 'b-blue';
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td style="font-weight:600">' + p.name + '</td>' +
+      '<td><span class="badge ' + badgeCls + '">' + p.tipo + '</span></td>' +
+      '<td style="color:var(--muted)">' + (protName[p.proteina]||p.proteina) + '</td>' +
+      '<td style="color:var(--muted)">' + p.unit + '</td>' +
+      '<td style="font-size:12px;color:var(--muted)">' + p.fmt + '</td>' +
+      '<td style="font-weight:700;color:var(--blue-600)">' + precioFmt + '</td>' +
+      '<td></td>';
+    var btn = document.createElement('button');
+    btn.className = 'btn-sm';
+    btn.style.fontSize = '12px';
+    btn.textContent = 'Editar precio';
+    btn.setAttribute('data-pid', p.id);
+    btn.addEventListener('click', function(){ editPrecio(this.getAttribute('data-pid')); });
+    tr.cells[6].appendChild(btn);
+    tb.appendChild(tr);
+  }
+}
+
+function editPrecio(id) {
+  const prod = CATALOG.productos.find(function(p){ return p.id === id; });
+  if (!prod) return;
+  document.getElementById('precio-id').value = id;
+  document.getElementById('precio-prod-name').textContent = prod.name + ' — ' + prod.fmt + ' (' + prod.unit + ')';
+  document.getElementById('precio-val').value = getPrice(id) || '';
+  document.getElementById('ov-precio').classList.add('open');
+}
+function closePrecio() { document.getElementById('ov-precio').classList.remove('open'); }
+function savePrecio() {
+  const id  = document.getElementById('precio-id').value;
+  const val = Number(document.getElementById('precio-val').value);
+  if (!val || val < 0) { toast('Ingresa un precio valido','error'); return; }
+  savePrice(id, val);
+  closePrecio();
+  renderProteinas();
+  toast('Precio actualizado ✓','success');
+}
+
+function onProteinaChange() {
+  const prot = document.getElementById('mov-proteina').value;
+  const prodSel = document.getElementById('mov-prod');
+  const ref = document.getElementById('mov-price-ref');
+  if (!prot) {
+    prodSel.innerHTML = '<option value="">Primero selecciona proteina</option>';
+    prodSel.disabled = true;
+    return;
+  }
+  const prods = CATALOG.productos.filter(function(p){ return p.proteina === prot; });
+  prodSel.innerHTML = prods.map(function(p){
+    return '<option value="'+p.id+'" data-unit="'+p.unit+'" data-dual="'+(p.dual?'1':'0')+'">'+p.name+(p.dual?' (unidades + kg)':' ('+p.unit+')')+'</option>';
+  }).join('');
+  prodSel.disabled = false;
+  onProductChange();
+}
+
+function onProductChange() {
+  const sel = document.getElementById('mov-prod');
+  if (!sel) return;
+  const opt = sel.options[sel.selectedIndex];
+  if (!opt || !opt.value) return;
+  const isDual = opt.dataset.dual === '1';
+  const unit   = opt.dataset.unit || 'kg';
+  document.getElementById('mov-dual').style.display   = isDual ? 'block' : 'none';
+  document.getElementById('mov-single').style.display = isDual ? 'none'  : 'block';
+  document.getElementById('mov-unit-lbl').textContent = '('+unit+')';
+  const precio = getPrice(opt.value);
+  const ref = document.getElementById('mov-price-ref');
+  if (precio > 0) {
+    ref.textContent = '— ref: $'+precio.toLocaleString('es-CL');
+    document.getElementById('mov-price').value = precio;
+  } else {
+    ref.textContent = '';
+    document.getElementById('mov-price').value = '';
+  }
+}
+
+
 // ─── RENDER ALL ────────────────────────────────────────────────────────
 function renderAll() {
   renderDash();
   renderMovs();
   renderStock();
   fillProdSelects();
+  renderProteinas();
 }
 
 // ─── DASHBOARD ─────────────────────────────────────────────────────────
@@ -924,7 +1168,7 @@ function renderMovs() {
     const tot = (Number(m.price||0)*Number(m.qty||0)).toLocaleString('es-CL');
     return `<tr>
       <td style="font-size:11px;color:var(--muted)">${m.date.slice(0,16)}</td>
-      <td style="font-weight:500">${p?p.name:m.pid}</td>
+      <td style="font-weight:500">${m.pname || (p?p.name:m.pid)}</td>
       <td style="font-size:12px;color:var(--muted)">${m.proc||'—'}</td>
       <td><span class="pill ${pc[m.tipo]}">${pl[m.tipo]}</span></td>
       <td style="font-weight:600">${m.qty} ${p?p.unit:''}</td>
@@ -968,11 +1212,25 @@ function renderStock(search='') {
 
 // ─── SELECTS ───────────────────────────────────────────────────────────
 function fillProdSelects() {
-  const opts = products.map(p=>`<option value="${p.id}">${p.name} (${p.tipo||''})</option>`).join('');
-  document.getElementById('mov-prod').innerHTML = opts || '<option>Sin productos</option>';
-  document.getElementById('f-prod').innerHTML   = '<option value="">Todos</option>' +
-    products.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
-  updateProcesos();
+  // mov-prod is now static HTML with all products
+  // Only update the filter select
+  const allProds = [
+    {id:'pt1',name:'Salmón relleno'},{id:'pt2',name:'Salmón ceviche'},
+    {id:'pt3',name:'Salmón molde'},{id:'pt4',name:'Sashimi salmón'},
+    {id:'pt5',name:'Pollo filetado'},{id:'pt6',name:'Pollo apanado'},
+    {id:'pt7',name:'Pollo molde'},{id:'pt8',name:'Pollo teriyaki'},
+    {id:'pt9',name:'Camarón estirado'},{id:'pt10',name:'Camarón apanado'},
+    {id:'pt11',name:'Jaiba relleno'},{id:'pt12',name:'Chupe de jaiba'},
+    {id:'pt13',name:'Tocino relleno'},{id:'pt14',name:'Pulpo relleno'},
+    {id:'pt15',name:'Carne relleno'},{id:'pt16',name:'Carne molde'},
+    {id:'mp1',name:'Camarón (MP)'},{id:'mp2',name:'Carne vacuno (MP)'},
+    {id:'mp3',name:'Pollo pechuga (MP)'},{id:'mp4',name:'Tocino (MP)'},
+    {id:'mp5',name:'Pulpo (MP)'},{id:'mp6',name:'Jaiba (MP)'},
+    {id:'mp7',name:'Salmón sin piel (MP)'},{id:'mp8',name:'Salmón con piel (MP)'}
+  ];
+  document.getElementById('f-prod').innerHTML = '<option value="">Todos</option>' +
+    allProds.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');
+  onProductChange();
 }
 function updateProcesos() {
   const pid  = document.getElementById('mov-prod').value;
@@ -1011,28 +1269,44 @@ function openMov(tipo) {
   document.getElementById('mov-user').value  = lastUser;
   var ps = document.getElementById('mov-prod-section');
   if(ps) ps.style.display = (tipo === 'entrada') ? 'block' : 'none';
-  fillProdSelects();
+  // reset dual fields
+  document.getElementById('mov-qty').value = '';
+  document.getElementById('mov-qty-u') && (document.getElementById('mov-qty-u').value = '');
+  document.getElementById('mov-qty-kg') && (document.getElementById('mov-qty-kg').value = '');
+  onProductChange();
   document.getElementById('ov-mov').classList.add('open');
 }
 function closeMov() { document.getElementById('ov-mov').classList.remove('open'); }
 
+// onProductChange moved to proteinas section
+
 async function saveMov() {
   const pid   = document.getElementById('mov-prod').value;
   const procEl = document.getElementById('mov-prod-type'); const proc = procEl ? procEl.value : '';
-  const qty   = Number(document.getElementById('mov-qty').value);
+  const sel    = document.getElementById('mov-prod');
+  const opt    = sel.options[sel.selectedIndex];
+  const isDual = opt && opt.dataset.dual === '1';
+  const qtyU   = isDual ? Number(document.getElementById('mov-qty-u').value)  : 0;
+  const qtyKg  = isDual ? Number(document.getElementById('mov-qty-kg').value) : 0;
+  const qty    = isDual ? qtyKg : Number(document.getElementById('mov-qty').value);
+  if (isDual && (!qtyU || qtyU<=0)) { toast('Ingresa el número de unidades','error'); return; }
+  if (isDual && (!qtyKg || qtyKg<=0)) { toast('Ingresa el peso total en kg','error'); return; }
   const price = Number(document.getElementById('mov-price').value)||0;
   const notes = document.getElementById('mov-notes').value.trim();
   const user  = document.getElementById('mov-user').value.trim();
   if (!pid)   { toast('Selecciona un producto','error'); return; }
   if (!qty||qty<=0) { toast('Ingresa una cantidad válida','error'); return; }
   const p = products.find(x=>x.id===pid);
-  if (!p) { toast('Producto no encontrado','error'); return; }
-  if ((curMovType==='venta'||curMovType==='salida'||curMovType==='merma') && p.stock<qty) {
-    toast(`Stock insuficiente: hay ${p.stock} ${p.unit}`,'error'); return;
+  if ((curMovType==='venta'||curMovType==='salida'||curMovType==='merma') && p && p.stock<qty) {
+    toast('Stock insuficiente: hay '+p.stock+' '+(p.unit||''),'error'); return;
   }
+  const pName = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text.split(' (')[0] : pid;
+  const dualNote = isDual ? '['+qtyU+' uds | '+qtyKg+' kg] ' : '';
   const mov = {
     id:'mv'+Date.now(), date:new Date().toISOString().slice(0,16).replace('T',' '),
-    pid, proc, tipo:curMovType, qty, price, notes, user
+    pid, pname: pName, proc, tipo:curMovType,
+    qty, qtyU: isDual ? qtyU : null,
+    price, notes: dualNote + notes, user
   };
   movements.push(mov);
   if (curMovType==='entrada') p.stock = +(p.stock+qty).toFixed(2);
