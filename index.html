@@ -3,35 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Gestión de Inventario</title>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js">
-function exportCSV() {
-  // Export movements
-  const headers = ['Fecha','Producto','Produccion','Tipo','Cantidad','Unidad','Precio','Total','Notas','Usuario'];
-  const rows = movements.map(m => {
-    const p = products.find(x=>x.id===m.pid);
-    const total = (Number(m.price||0)*Number(m.qty||0)).toFixed(0);
-    return [
-      m.date, p?p.name:m.pid, m.proc||'', m.tipo,
-      m.qty, p?p.unit:'', m.price||'', total, m.notes||'', m.user||''
-    ].map(v => '"'+String(v).replace(/"/g,'""')+'"').join(',');
-  });
-  const csv = [headers.join(','), ...rows].join('\n');
-  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'ANMICODA_movimientos_'+new Date().toISOString().slice(0,10)+'.csv';
-  a.click(); URL.revokeObjectURL(url);
-  toast('CSV exportado ✓','success');
-}
-
-function confirmReset() {
-  if (confirm('¿Seguro que quieres borrar TODOS los datos? Esta acción no se puede deshacer.')) {
-    localStorage.clear(); location.reload();
-  }
-}
-</script>
+<title>Gestión de Inventario - ANMICODA</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
 :root {
@@ -291,10 +266,10 @@ tbody tr:hover { background: var(--surface2); }
   .kpi-row { grid-template-columns: 1fr 1fr; }
   .g2, .g3, .g4 { grid-template-columns: 1fr; }
 }
+
 </style>
 </head>
 <body>
-
 <!-- SETUP -->
 <div id="setup-overlay">
   <div class="setup-box">
@@ -423,8 +398,8 @@ tbody tr:hover { background: var(--surface2); }
         <div class="act-btns">
           <button class="btn-act ba-ent" onclick="openMov('entrada')">＋ Entrada</button>
           <button class="btn-act ba-ven" onclick="openMov('venta')">＋ Venta</button>
-          <button class="btn-act ba-sal" onclick="openMov('salida')">＋ Salida</button>
-          <button class="btn-act ba-mer" onclick="openMov('merma')">＋ Merma</button>
+          <button class="btn-act ba-sal" onclick="openMov('salida')">＋ Salida / Merma</button>
+          
         </div>
       </div>
       <div class="filters">
@@ -434,6 +409,7 @@ tbody tr:hover { background: var(--surface2); }
           <option value="venta">Venta</option>
           <option value="salida">Salida</option>
           <option value="merma">Merma</option>
+          <option value="produccion">Produccion</option>
         </select>
         <select id="f-prod" onchange="renderMovs()"><option value="">Todos los productos</option></select>
         <input type="date" id="f-date" onchange="renderMovs()">
@@ -544,28 +520,7 @@ tbody tr:hover { background: var(--surface2); }
       <option value="">Primero selecciona proteina</option>
     </select>
 
-    <div id="mov-prod-section" style="display:none;margin-top:10px">
-      <label>Produccion asociada</label>
-      <select id="mov-prod-type">
-        <option value="">Sin produccion asociada</option>
-        <option value="salmon relleno">Salmon relleno</option>
-        <option value="salmon ceviche">Salmon ceviche</option>
-        <option value="salmon molde">Salmon molde</option>
-        <option value="sashimi salmon">Sashimi salmon</option>
-        <option value="pollo filetado">Pollo filetado</option>
-        <option value="pollo apanado">Pollo apanado</option>
-        <option value="pollo molde">Pollo molde</option>
-        <option value="pollo teriyaki">Pollo teriyaki</option>
-        <option value="camaron estirado">Camaron estirado</option>
-        <option value="camaron apanado">Camaron apanado</option>
-        <option value="jaiba relleno">Jaiba relleno</option>
-        <option value="chupe de jaiba">Chupe de jaiba</option>
-        <option value="tocino relleno">Tocino relleno</option>
-        <option value="pulpo relleno">Pulpo relleno</option>
-        <option value="carne relleno">Carne relleno</option>
-        <option value="carne molde">Carne molde</option>
-      </select>
-    </div>
+
 
     <div id="mov-single">
       <label>Cantidad <span id="mov-unit-lbl" style="color:var(--blue-600);font-weight:700">(kg)</span></label>
@@ -580,6 +535,14 @@ tbody tr:hover { background: var(--surface2); }
       <input type="number" id="mov-qty-u" min="1" step="1" placeholder="Numero de unidades">
       <label>Peso total (kg)</label>
       <input type="number" id="mov-qty-kg" min="0.01" step="0.01" placeholder="Peso total en kg">
+    </div>
+
+    <div id="mov-tipo-salida-wrap" style="display:none">
+      <label>Tipo de salida</label>
+      <select id="mov-tipo-salida">
+        <option value="merma">Merma</option>
+        <option value="produccion">Produccion</option>
+      </select>
     </div>
 
     <label id="mov-plbl">Precio neto unitario <span id="mov-price-ref" style="font-size:11px;color:var(--blue-600)"></span></label>
@@ -674,8 +637,33 @@ tbody tr:hover { background: var(--surface2); }
     </div>
   </div>
 </div>
-
 <script>
+function exportCSV() {
+  // Export movements
+  const headers = ['Fecha','Producto','Produccion','Tipo','Cantidad','Unidad','Precio','Total','Notas','Usuario'];
+  const rows = movements.map(m => {
+    const p = products.find(x=>x.id===m.pid);
+    const total = (Number(m.price||0)*Number(m.qty||0)).toFixed(0);
+    return [
+      m.date, p?p.name:m.pid, m.proc||'', m.tipo,
+      m.qty, p?p.unit:'', m.price||'', total, m.notes||'', m.user||''
+    ].map(v => '"'+String(v).replace(/"/g,'""')+'"').join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'ANMICODA_movimientos_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click(); URL.revokeObjectURL(url);
+  toast('CSV exportado ✓','success');
+}
+
+function confirmReset() {
+  if (confirm('¿Seguro que quieres borrar TODOS los datos? Esta acción no se puede deshacer.')) {
+    localStorage.clear(); location.reload();
+  }
+}
+
 // ─── CATÁLOGO DESDE EL EXCEL ───────────────────────────────────────────
 const EXCEL_PROCESOS = {
   'salmon relleno':  ['limpieza','corte en bastones','envasado','sellado al vacio','almacenado'],
@@ -1161,8 +1149,8 @@ function renderMovs() {
   const em = document.getElementById('movs-empty');
   if (!list.length) { tb.innerHTML=''; em.style.display='block'; return; }
   em.style.display='none';
-  const pc={'entrada':'pill-ent','venta':'pill-ven','salida':'pill-sal','merma':'pill-mer'};
-  const pl={'entrada':'Entrada','venta':'Venta','salida':'Salida','merma':'Merma'};
+  const pc={'entrada':'pill-ent','venta':'pill-ven','salida':'pill-sal','merma':'pill-mer','produccion':'pill-mer'};
+  const pl={'entrada':'Entrada','venta':'Venta','salida':'Salida','merma':'Merma','produccion':'Produccion'};
   tb.innerHTML = list.map(m => {
     const p = products.find(x=>x.id===m.pid);
     const tot = (Number(m.price||0)*Number(m.qty||0)).toLocaleString('es-CL');
@@ -1254,8 +1242,7 @@ function openMov(tipo) {
   const cfg = {
     entrada:{icon:'📥',ttl:'Registrar entrada de stock',plbl:'Costo unitario',okCls:'bok-ent',okTxt:'Confirmar entrada'},
     venta:  {icon:'💰',ttl:'Registrar venta',plbl:'Precio de venta unitario',okCls:'bok-ven',okTxt:'Confirmar venta'},
-    salida: {icon:'📤',ttl:'Registrar salida',plbl:'Valor unitario',okCls:'bok-sal',okTxt:'Confirmar salida'},
-    merma:  {icon:'⚠️',ttl:'Registrar merma de producción',plbl:'Valor estimado pérdida',okCls:'bok-mer',okTxt:'Registrar merma'},
+    salida: {icon:'📤',ttl:'Registrar salida / merma',plbl:'Valor unitario',okCls:'bok-sal',okTxt:'Confirmar salida'},
   };
   const c = cfg[tipo];
   document.getElementById('mov-icon').textContent = c.icon;
@@ -1267,8 +1254,7 @@ function openMov(tipo) {
   document.getElementById('mov-price').value = '';
   document.getElementById('mov-notes').value = '';
   document.getElementById('mov-user').value  = lastUser;
-  var ps = document.getElementById('mov-prod-section');
-  if(ps) ps.style.display = (tipo === 'entrada') ? 'block' : 'none';
+
   // reset dual fields
   document.getElementById('mov-qty').value = '';
   document.getElementById('mov-qty-u') && (document.getElementById('mov-qty-u').value = '');
@@ -1302,9 +1288,14 @@ async function saveMov() {
   }
   const pName = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text.split(' (')[0] : pid;
   const dualNote = isDual ? '['+qtyU+' uds | '+qtyKg+' kg] ' : '';
+  var tipoFinal = curMovType;
+  if (curMovType === 'salida') {
+    var tsEl = document.getElementById('mov-tipo-salida');
+    tipoFinal = tsEl ? tsEl.value : 'salida';
+  }
   const mov = {
     id:'mv'+Date.now(), date:new Date().toISOString().slice(0,16).replace('T',' '),
-    pid, pname: pName, proc, tipo:curMovType,
+    pid, pname: pName, proc, tipo:tipoFinal,
     qty, qtyU: isDual ? qtyU : null,
     price, notes: dualNote + notes, user
   };
@@ -1354,6 +1345,5 @@ function toast(msg, type='info') {
   clearTimeout(_tt); _tt = setTimeout(()=>t.className='', 3200);
 }
 </script>
-
 </body>
 </html>
