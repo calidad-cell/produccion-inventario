@@ -2,10 +2,15 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gestión de Inventario - ANMICODA</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
+
+
 
 
 
@@ -269,6 +274,8 @@ tbody tr:hover { background: var(--surface2); }
   .kpi-row { grid-template-columns: 1fr 1fr; }
   .g2, .g3, .g4 { grid-template-columns: 1fr; }
 }
+
+
 
 
 
@@ -642,8 +649,9 @@ tbody tr:hover { background: var(--surface2); }
     </div>
   </div>
 </div>
-
 <script type="module">
+
+
 
 // ─── FIREBASE REALTIME DATABASE ──────────────────────────
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
@@ -923,7 +931,7 @@ async function syncAll() {
   loadLocal(); renderAll();
   fbSyncAll();
 }
-async function push(action, payload) {
+async function fbPush(action, payload) {
   saveLocal();
   if (action === 'addMovement') fbSaveMovement(payload.movement, payload.products);
   if (action === 'addProduct')  fbSaveProduct(payload.product);
@@ -1384,7 +1392,7 @@ async function saveMov() {
   else                        p.stock = +(p.stock-qty).toFixed(2);
   lastUser = user; ls('lastUser',user);
   closeMov();
-  const r = await push('addMovement',{movement:mov,products});
+  const r = await fbPush('addMovement',{movement:mov,products});
   toast(r.local?'Guardado sin conexión':'Movimiento registrado ✓', r.local?'info':'success');
   renderAll();
 }
@@ -1412,7 +1420,7 @@ async function saveProduct() {
   };
   products.push(prod);
   closeAddProduct();
-  const r = await push('addProduct',{product:prod});
+  const r = await fbPush('addProduct',{product:prod});
   toast(r.local?'Guardado sin conexión':'Producto creado ✓', r.local?'info':'success');
   renderAll();
 }
@@ -1424,6 +1432,29 @@ function toast(msg, type='info') {
   t.textContent = msg; t.className = 'show '+type;
   clearTimeout(_tt); _tt = setTimeout(()=>t.className='', 3200);
 }
+
+// ─── EXPOSE FUNCTIONS TO WINDOW (required for type="module") ─────────
+window.goTab           = goTab;
+window.openMov         = openMov;
+window.closeMov        = closeMov;
+window.saveMov         = saveMov;
+window.openAddProduct  = openAddProduct;
+window.closeAddProduct = closeAddProduct;
+window.saveProduct     = saveProduct;
+window.editPrecio      = editPrecio;
+window.closePrecio     = closePrecio;
+window.savePrecio      = savePrecio;
+window.syncAll         = syncAll;
+window.resetApp        = resetApp;
+window.exportCSV       = exportCSV;
+window.confirmReset    = confirmReset;
+window.renderMovs      = renderMovs;
+window.renderStock     = renderStock;
+window.renderProteinas = renderProteinas;
+window.clearF          = clearF;
+window.onProteinaChange= onProteinaChange;
+window.onProductChange = onProductChange;
+
 
 </script>
 </body>
