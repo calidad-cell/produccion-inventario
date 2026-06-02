@@ -517,7 +517,6 @@ tbody tr:hover { background: var(--surface2); }
       <label>Proteína</label>
       <select id="mov-proteina" onchange="onProteinaChange()">
         <option value="">Seleccionar proteína...</option>
-        <option value="prot-salmon">Salmón</option>
         <option value="prot-salmon-sp">Salmón sin piel</option>
         <option value="prot-salmon-cp">Salmón con piel</option>
         <option value="prot-pollo">Pollo</option>
@@ -642,6 +641,15 @@ tbody tr:hover { background: var(--surface2); }
   </div>
 </div>
 <script type="module">
+
+
+
+
+
+
+
+// ─── FIREBASE REALTI<script type="module">
+
 
 
 
@@ -1022,7 +1030,14 @@ function onProteinaChange() {
   var prot = document.getElementById('mov-proteina').value;
   var prodSel = document.getElementById('mov-prod');
   if (!prot || !prodSel) return;
-  var prods = CATALOG.productos.filter(function(p){ return p.proteina === prot && p.tipo === 'Producto terminado'; });
+  // Both salmon-sp and salmon-cp show all salmon products
+  var filterProt = prot;
+  if (prot === 'prot-salmon-sp' || prot === 'prot-salmon-cp') filterProt = 'prot-salmon';
+  var prods = CATALOG.productos.filter(function(p){
+    var pProt = p.proteina;
+    if (pProt === 'prot-salmon-sp' || pProt === 'prot-salmon-cp') pProt = 'prot-salmon';
+    return pProt === filterProt && p.tipo === 'Producto terminado';
+  });
   prodSel.innerHTML = '<option value="">Seleccionar producto...</option>' + prods.map(function(p){
     return '<option value="'+p.id+'" data-unit="'+p.unit+'">'+p.name+'</option>';
   }).join('');
@@ -1398,7 +1413,7 @@ async function saveMov() {
     if (!protOpt || !protOpt.value) { toast('Selecciona una proteína','error'); return; }
     // Map proteina to its MP product id
     const protToMp = {
-      'prot-salmon':'mp7','prot-salmon-sp':'mp7','prot-salmon-cp':'mp8',
+      'prot-salmon-sp':'mp7','prot-salmon-cp':'mp8',
       'prot-pollo':'mp3','prot-jaiba':'mp6','prot-tocino':'mp4',
       'prot-camaron':'mp1','prot-pulpo':'mp5','prot-carne':'mp2'
     };
@@ -1512,7 +1527,8 @@ window.onProductChange  = onProductChange;
 window.loadAllProductsForVenta = loadAllProductsForVenta;
 
 
-</script>ecio" onclick="if(event.target===this)closePrecio()">
+
+</script>>
   <div class="modal">
     <div class="modal-title">💰 Editar precio neto</div>
     <input type="hidden" id="precio-id">
