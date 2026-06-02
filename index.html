@@ -510,10 +510,10 @@ tbody tr:hover { background: var(--surface2); }
 <!-- MODAL MOVIMIENTO -->
 <div class="overlay" id="ov-mov" onclick="if(event.target===this)closeMov()">
   <div class="modal">
-    <div class="modal-title"><span id="mov-icon">📥</span><span id="mov-ttl">Recepción de insumos</span></div>
+    <div class="modal-title"><span id="mov-icon">📥</span><span id="mov-ttl">Recepción</span></div>
 
-    <!-- PROTEINA (recepcion y produccion) -->
-    <div id="mov-sec-proteina">
+    <!-- PROTEINA: recepcion + produccion -->
+    <div id="mov-sec-proteina" style="display:none">
       <label>Proteína</label>
       <select id="mov-proteina" onchange="onProteinaChange()">
         <option value="">Seleccionar proteína...</option>
@@ -529,7 +529,7 @@ tbody tr:hover { background: var(--surface2); }
       </select>
     </div>
 
-    <!-- PRODUCTO (solo produccion y venta) -->
+    <!-- PRODUCTO: produccion + venta -->
     <div id="mov-sec-producto" style="display:none">
       <label>Producto</label>
       <select id="mov-prod" onchange="onProductChange()" disabled>
@@ -537,10 +537,10 @@ tbody tr:hover { background: var(--surface2); }
       </select>
     </div>
 
-    <!-- CANTIDAD con selector kg/porcion -->
+    <!-- CANTIDAD: todos -->
     <div id="mov-sec-cantidad">
       <label>Cantidad</label>
-      <div style="display:flex;gap:8px;align-items:center">
+      <div style="display:flex;gap:8px">
         <input type="number" id="mov-qty" min="0.01" step="0.01" placeholder="0.00" style="flex:1">
         <select id="mov-unidad" style="width:110px;padding:9px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;outline:none">
           <option value="kg">kg</option>
@@ -549,10 +549,10 @@ tbody tr:hover { background: var(--surface2); }
       </div>
     </div>
 
-    <!-- MERMA (solo produccion) -->
+    <!-- MERMA: solo produccion -->
     <div id="mov-sec-merma" style="display:none">
       <label>Merma</label>
-      <div style="display:flex;gap:8px;align-items:center">
+      <div style="display:flex;gap:8px">
         <input type="number" id="mov-merma" min="0" step="0.01" placeholder="0.00" style="flex:1">
         <select id="mov-merma-unidad" style="width:110px;padding:9px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;outline:none">
           <option value="kg">kg</option>
@@ -561,7 +561,7 @@ tbody tr:hover { background: var(--surface2); }
       </div>
     </div>
 
-    <!-- PRECIO (solo venta) -->
+    <!-- PRECIO: solo venta -->
     <div id="mov-sec-precio" style="display:none">
       <label>Precio neto <span id="mov-price-ref" style="font-size:11px;color:var(--blue-600)"></span></label>
       <input type="number" id="mov-price" min="0" step="1" placeholder="0">
@@ -649,6 +649,15 @@ tbody tr:hover { background: var(--surface2); }
 
 
 
+// ─── FIREBASE REALTIME<script type="module">
+
+
+
+
+
+
+
+
 // ─── FIREBASE REALTIME DATABASE ──────────────────────────
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
 import { getDatabase, ref, set, get, child, push, onValue } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js';
@@ -697,12 +706,13 @@ async function fbSyncAll() {
   setSpin(false);
 }
 
-async function fbSaveMovement(mov, prods) {
+async function fbSaveMovement(mov) {
   try {
     await set(ref(db, 'movements/' + mov.id), mov);
-    for (const p of prods) {
-      await set(ref(db, 'products/' + p.id), p);
-    }
+    // Save all catalog stocks
+    var stocks = {};
+    CATALOG.productos.forEach(function(p){ stocks[p.id] = p.stock||0; });
+    await set(ref(db, 'catalogStocks'), stocks);
   } catch(e) { console.error('fbSaveMovement:', e); }
 }
 
@@ -828,14 +838,14 @@ const CATALOG = {
     {id:'pt14', proteina:'prot-pulpo',   name:'Pulpo relleno',     unit:'unidades', dual:false, fmt:'Bolsa 10 unidades',      tipo:'Producto terminado'},
     {id:'pt15', proteina:'prot-carne',   name:'Carne relleno',     unit:'unidades', dual:false, fmt:'Bolsa 10 unidades',      tipo:'Producto terminado'},
     {id:'pt16', proteina:'prot-carne',   name:'Carne molde',       unit:'unidades', dual:false, fmt:'Unidad 500g',            tipo:'Producto terminado'},
-    {id:'mp1',  proteina:'prot-camaron', name:'Camaron',           unit:'kg',       dual:false, fmt:'Caja 100kg / bolsas 1kg',tipo:'Materia prima'},
-    {id:'mp2',  proteina:'prot-carne',   name:'Carne vacuno',      unit:'kg',       dual:false, fmt:'Bolsas de 3 kg',         tipo:'Materia prima'},
-    {id:'mp3',  proteina:'prot-pollo',   name:'Pollo pechuga',     unit:'kg',       dual:false, fmt:'Caja 10 kg congelado',   tipo:'Materia prima'},
-    {id:'mp4',  proteina:'prot-tocino',  name:'Tocino congelado',  unit:'kg',       dual:false, fmt:'Bolsas 500g',            tipo:'Materia prima'},
-    {id:'mp5',  proteina:'prot-pulpo',   name:'Pulpo congelado',   unit:'kg',       dual:false, fmt:'Bolsas de kg',           tipo:'Materia prima'},
-    {id:'mp6',  proteina:'prot-jaiba',   name:'Jaiba',             unit:'kg',       dual:false, fmt:'Bolsas 500g',            tipo:'Materia prima'},
-    {id:'mp7',  proteina:'prot-salmon-sp',  name:'Salmon sin piel',   unit:'kg',       dual:false, fmt:'Cajas 10kg filetes',     tipo:'Materia prima'},
-    {id:'mp8',  proteina:'prot-salmon-cp',  name:'Salmon con piel',   unit:'kg',       dual:false, fmt:'Cajas 10kg con piel',    tipo:'Materia prima'},
+    {id:'mp1',  proteina:'prot-camaron',  name:'Camaron',          unit:'kg', dual:false, fmt:'Caja 100kg / bolsas 1kg', tipo:'Materia prima', stock:0, min:50},
+    {id:'mp2',  proteina:'prot-carne',    name:'Carne vacuno',     unit:'kg', dual:false, fmt:'Bolsas de 3 kg',          tipo:'Materia prima', stock:0, min:30},
+    {id:'mp3',  proteina:'prot-pollo',    name:'Pollo pechuga',    unit:'kg', dual:false, fmt:'Caja 10 kg congelado',    tipo:'Materia prima', stock:0, min:50},
+    {id:'mp4',  proteina:'prot-tocino',   name:'Tocino congelado', unit:'kg', dual:false, fmt:'Bolsas 500g',             tipo:'Materia prima', stock:0, min:20},
+    {id:'mp5',  proteina:'prot-pulpo',    name:'Pulpo congelado',  unit:'kg', dual:false, fmt:'Bolsas de kg',            tipo:'Materia prima', stock:0, min:15},
+    {id:'mp6',  proteina:'prot-jaiba',    name:'Jaiba',            unit:'kg', dual:false, fmt:'Bolsas 500g',             tipo:'Materia prima', stock:0, min:25},
+    {id:'mp7',  proteina:'prot-salmon-sp',name:'Salmon sin piel',  unit:'kg', dual:false, fmt:'Cajas 10kg filetes',      tipo:'Materia prima', stock:0, min:40},
+    {id:'mp8',  proteina:'prot-salmon-cp',name:'Salmon con piel',  unit:'kg', dual:false, fmt:'Cajas 10kg con piel',     tipo:'Materia prima', stock:0, min:30},
   ]
 };
 
@@ -872,6 +882,11 @@ function doDemo() {
   buildDemoData(); launch(biz);
 }
 function launch(biz) {
+  // Restore saved stocks into CATALOG
+  try {
+    var savedStocks = JSON.parse(localStorage.getItem('anmicoda_stocks')||'{}');
+    CATALOG.productos.forEach(function(p){ if(savedStocks[p.id]!==undefined) p.stock=savedStocks[p.id]; });
+  } catch(e){}
   document.getElementById('setup-overlay').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
   document.getElementById('biz-name').textContent = biz || 'ANMICODA';
@@ -931,7 +946,7 @@ async function syncAll() {
 }
 async function fbPush(action, payload) {
   saveLocal();
-  if (action === 'addMovement') fbSaveMovement(payload.movement, payload.products);
+  if (action === 'addMovement') fbSaveMovement(payload.movement);
   if (action === 'addProduct')  fbSaveProduct(payload.product);
   return {ok:true};
 }
@@ -1057,9 +1072,9 @@ function renderDash() {
   const mermas  = movements.filter(m => m.tipo==='merma');
   const mermaM  = mermas.filter(m => m.date.startsWith(ym));
   const ventasM = movements.filter(m => m.tipo==='venta' && m.date.startsWith(ym));
-  const low     = products.filter(p => p.stock <= p.min);
+  const low     = CATALOG.productos.filter(function(p){ return (p.stock||0) <= (p.min||10); });
 
-  document.getElementById('k-prod').textContent = products.length;
+  document.getElementById('k-prod').textContent = CATALOG.productos.length;
   document.getElementById('k-vent').textContent = ventasM.reduce((a,m)=>a+Number(m.qty),0).toFixed(1);
   document.getElementById('k-merm').textContent = mermaM.reduce((a,m)=>a+Number(m.qty),0).toFixed(1);
   document.getElementById('k-crit').textContent = low.length;
@@ -1258,12 +1273,17 @@ function clearF() {
 }
 
 // ─── STOCK ─────────────────────────────────────────────────────────────
-function renderStock(search='') {
+function renderStock(search) {
   const grid = document.getElementById('stock-grid');
   const em   = document.getElementById('stock-empty');
-  let list = search
-    ? products.filter(p=>p.name.toLowerCase().includes(search.toLowerCase())||(p.proteina||'').includes(search.toLowerCase()))
-    : products;
+  // Use CATALOG as master list (includes both MP and PT with stock)
+  var catalogList = CATALOG.productos;
+  var savedStocks = {};
+  try { savedStocks = JSON.parse(localStorage.getItem('anmicoda_stocks')||'{}'); } catch(e){}
+  catalogList.forEach(function(p){ if(savedStocks[p.id]!==undefined) p.stock=savedStocks[p.id]; });
+  var list = search
+    ? catalogList.filter(function(p){ return p.name.toLowerCase().includes(search.toLowerCase()); })
+    : catalogList;
   if (!list.length) { grid.innerHTML=''; em.style.display='block'; return; }
   em.style.display='none';
   grid.innerHTML = list.map(p => {
@@ -1328,11 +1348,24 @@ function openMov(tipo) {
     produccion: {icon:'⚙️', ttl:'Registrar producción',  okCls:'bok-sal', okTxt:'Confirmar producción'},
     venta:      {icon:'💰', ttl:'Registrar venta',        okCls:'bok-ven', okTxt:'Confirmar venta'},
   };
-  const c = cfg[tipo];
+  const c = cfg[tipo] || cfg['recepcion'];
   document.getElementById('mov-icon').textContent = c.icon;
   document.getElementById('mov-ttl').textContent  = c.ttl;
   const ok = document.getElementById('mov-ok');
   ok.className = 'btn-ok '+c.okCls; ok.textContent = c.okTxt;
+  // Show/hide sections
+  var show = function(id,v){ var el=document.getElementById(id); if(el) el.style.display=v?'block':'none'; };
+  show('mov-sec-proteina', tipo==='recepcion' || tipo==='produccion');
+  show('mov-sec-producto',  tipo==='produccion' || tipo==='venta');
+  show('mov-sec-merma',     tipo==='produccion');
+  show('mov-sec-precio',    tipo==='venta');
+  // Reset all fields
+  ['mov-qty','mov-merma','mov-price','mov-notes'].forEach(function(id){ var el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('mov-user').value = lastUser;
+  var protSel=document.getElementById('mov-proteina'); if(protSel) protSel.value='';
+  var prodSel=document.getElementById('mov-prod'); if(prodSel){ prodSel.innerHTML='<option value="">Primero selecciona proteína</option>'; prodSel.disabled=true; }
+  // For venta load all products directly
+  if (tipo==='venta') { setTimeout(loadAllProductsForVenta, 50); }
   document.getElementById('mov-qty').value   = '';
   document.getElementById('mov-price').value = '';
   document.getElementById('mov-notes').value = '';
@@ -1350,40 +1383,41 @@ function closeMov() { document.getElementById('ov-mov').classList.remove('open')
 // onProductChange moved to proteinas section
 
 async function saveMov() {
-  const tipo  = curMovType;
-  const user  = document.getElementById('mov-user').value.trim();
-  const notes = document.getElementById('mov-notes').value.trim();
-  const qty   = Number(document.getElementById('mov-qty').value);
+  const tipo   = curMovType;
+  const user   = document.getElementById('mov-user').value.trim();
+  const notes  = document.getElementById('mov-notes').value.trim();
+  const qty    = Number(document.getElementById('mov-qty').value);
   const unidad = document.getElementById('mov-unidad') ? document.getElementById('mov-unidad').value : 'kg';
-
   if (!qty || qty <= 0) { toast('Ingresa una cantidad válida','error'); return; }
 
-  let pid = '', pname = '', proc = '', price = 0, merma = 0, mermaUnidad = 'kg';
+  let pid='', pname='', price=0, merma=0, mermaUnidad='kg';
 
   if (tipo === 'recepcion') {
-    // Solo proteina
     const protSel = document.getElementById('mov-proteina');
     const protOpt = protSel ? protSel.options[protSel.selectedIndex] : null;
     if (!protOpt || !protOpt.value) { toast('Selecciona una proteína','error'); return; }
-    pid   = protOpt.value;
+    // Map proteina to its MP product id
+    const protToMp = {
+      'prot-salmon':'mp7','prot-salmon-sp':'mp7','prot-salmon-cp':'mp8',
+      'prot-pollo':'mp3','prot-jaiba':'mp6','prot-tocino':'mp4',
+      'prot-camaron':'mp1','prot-pulpo':'mp5','prot-carne':'mp2'
+    };
+    pid   = protToMp[protOpt.value] || protOpt.value;
     pname = protOpt.text;
 
   } else if (tipo === 'produccion') {
-    // Proteina + producto + merma
     const protSel = document.getElementById('mov-proteina');
     const protOpt = protSel ? protSel.options[protSel.selectedIndex] : null;
     if (!protOpt || !protOpt.value) { toast('Selecciona una proteína','error'); return; }
     const prodSel = document.getElementById('mov-prod');
     const prodOpt = prodSel ? prodSel.options[prodSel.selectedIndex] : null;
     if (!prodOpt || !prodOpt.value) { toast('Selecciona un producto','error'); return; }
-    pid   = prodOpt.value;
-    pname = prodOpt.text;
-    proc  = protOpt.text;
-    merma = Number(document.getElementById('mov-merma').value) || 0;
+    pid         = prodOpt.value;
+    pname       = prodOpt.text;
+    merma       = Number(document.getElementById('mov-merma').value) || 0;
     mermaUnidad = document.getElementById('mov-merma-unidad') ? document.getElementById('mov-merma-unidad').value : 'kg';
 
   } else if (tipo === 'venta') {
-    // Solo producto + precio
     const prodSel = document.getElementById('mov-prod');
     const prodOpt = prodSel ? prodSel.options[prodSel.selectedIndex] : null;
     if (!prodOpt || !prodOpt.value) { toast('Selecciona un producto','error'); return; }
@@ -1393,22 +1427,24 @@ async function saveMov() {
   }
 
   const mov = {
-    id: 'mv'+Date.now(),
+    id:'mv'+Date.now(),
     date: new Date().toISOString().slice(0,16).replace('T',' '),
-    pid, pname, proc, tipo, qty, unidad,
-    merma: merma || null, mermaUnidad: merma ? mermaUnidad : null,
+    pid, pname, tipo, qty, unidad,
+    merma: merma||null, mermaUnidad: merma?mermaUnidad:null,
     price, notes, user
   };
-
   movements.push(mov);
+  // Save to localStorage
+  var stocks={}; CATALOG.productos.forEach(function(p){ stocks[p.id]=p.stock||0; }); ls('anmicoda_stocks',JSON.stringify(stocks));
 
-  // Update stock
-  const p = products.find(x => x.id === pid);
-  if (p) {
-    if (tipo === 'recepcion') p.stock = +(p.stock + qty).toFixed(2);
-    else                      p.stock = +(p.stock - qty).toFixed(2);
+  // Update stock in CATALOG
+  var allProds = CATALOG.productos;
+  var found = allProds.find(function(p){ return p.id===pid; });
+  if (found) {
+    if (tipo==='recepcion') found.stock = +((found.stock||0)+qty).toFixed(2);
+    else                    found.stock = +((found.stock||0)-qty).toFixed(2);
+    if (found.stock < 0) found.stock = 0;
   }
-
   lastUser = user; ls('lastUser', user);
   closeMov();
   const r = await fbPush('addMovement',{movement:mov,products});
@@ -1475,7 +1511,20 @@ window.onProteinaChange = onProteinaChange;
 window.onProductChange  = onProductChange;
 window.loadAllProductsForVenta = loadAllProductsForVenta;
 
-</script>
+
+</script>ecio" onclick="if(event.target===this)closePrecio()">
+  <div class="modal">
+    <div class="modal-title">💰 Editar precio neto</div>
+    <input type="hidden" id="precio-id">
+    <div id="precio-prod-name" style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:16px;padding:12px;background:var(--surface2);border-radius:8px"></div>
+    <label>Precio neto por unidad / kg</label>
+    <input type="number" id="precio-val" min="0" step="1" placeholder="0">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closePrecio()">Cancelar</button>
+      <button class="btn-ok bok-ven" onclick="savePrecio()">Guardar precio</button>
+    </div>
+  </div>
+</div>
 
 <!-- MODAL PRECIO -->
 <div class="overlay" id="ov-precio" onclick="if(event.target===this)closePrecio()">
