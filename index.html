@@ -314,6 +314,7 @@ tbody tr:hover { background: var(--surface2); }
       <span id="biz-name">Inventario</span>
     </div>
     <div class="hdr-right">
+      <button class="btn-sm" onclick="syncAll()"><span class="sdot" id="sdot"></span>Sincronizar</button>
       <button class="btn-sm" onclick="exportCSV()">⬇️ Exportar CSV</button>
       <button class="btn-sm" onclick="openAddProduct()">+ Producto</button>
       <button class="btn-sm" onclick="confirmReset()" title="Borrar todos los datos">🗑️</button>
@@ -406,9 +407,10 @@ tbody tr:hover { background: var(--surface2); }
       <div class="page-hdr">
         <h2>Movimientos</h2>
         <div class="act-btns">
-         <button class="btn-act ba-ent" onclick="openMov('recepcion')">＋ Recepción</button>
-          <button class="btn-act" style="border-color:#7c3aed;color:#7c3aed;background:#ede9fe" onclick="openMov('produccion')">＋ Producción</button>
+          <button class="btn-act ba-ent" onclick="openMov('entrada')">＋ Entrada</button>
           <button class="btn-act ba-ven" onclick="openMov('venta')">＋ Venta</button>
+          <button class="btn-act ba-sal" onclick="openMov('salida')">＋ Salida / Merma</button>
+          
         </div>
       </div>
       <div class="filters">
@@ -643,6 +645,9 @@ tbody tr:hover { background: var(--surface2); }
 
 
 
+
+
+
 // ─── FIREBASE REALTIME DATABASE ──────────────────────────
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
 import { getDatabase, ref, set, get, child, push, onValue } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-database.js';
@@ -728,7 +733,8 @@ function exportCSV() {
       m.qty, p?p.unit:'', m.price||'', total, m.notes||'', m.user||''
     ].map(v => '"'+String(v).replace(/"/g,'""')+'"').join(',');
   });
-  const csv = [headers.join(','), ...rows].join('\n');
+  const csv = [headers.join(','), ...rows].join('
+');
   const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -929,7 +935,7 @@ async function fbPush(action, payload) {
   if (action === 'addProduct')  fbSaveProduct(payload.product);
   return {ok:true};
 }
-function setSpin(v) { document.getElementById('sdot').className='sdot'+(v?' spin':''); }
+function setSpin(v) { var el=document.getElementById('sdot'); if(el) el.className='sdot'+(v?' spin':''); }
 
 // ─── PROTEINAS & PRECIOS ─────────────────────────────
 function renderProteinas() {
@@ -1304,8 +1310,7 @@ function updateProcesos() {
   const p    = products.find(x=>x.id===pid);
   const key  = p ? p.name.toLowerCase() : '';
   const list = EXCEL_PROCESOS[key] || ['general','limpieza','envasado','almacenado'];
-  document.getElementById('mov-proc').innerHTML = list.map(pr=>`<option value="${pr}">${pr}</option>`).join('');
-}
+  }
 
 // ─── TABS ──────────────────────────────────────────────────────────────
 function goTab(tab, btn) {
@@ -1326,7 +1331,6 @@ function openMov(tipo) {
   const c = cfg[tipo];
   document.getElementById('mov-icon').textContent = c.icon;
   document.getElementById('mov-ttl').textContent  = c.ttl;
-  document.getElementById('mov-plbl').textContent = c.plbl;
   const ok = document.getElementById('mov-ok');
   ok.className = 'btn-ok '+c.okCls; ok.textContent = c.okTxt;
   document.getElementById('mov-qty').value   = '';
@@ -1336,8 +1340,8 @@ function openMov(tipo) {
 
   // reset dual fields
   document.getElementById('mov-qty').value = '';
-  document.getElementById('mov-qty-u') && (document.getElementById('mov-qty-u').value = '');
-  document.getElementById('mov-qty-kg') && (document.getElementById('mov-qty-kg').value = '');
+  
+  
   onProductChange();
   document.getElementById('ov-mov').classList.add('open');
 }
@@ -1469,9 +1473,29 @@ window.renderProteinas = renderProteinas;
 window.clearF          = clearF;
 window.onProteinaChange= onProteinaChange;
 window.onProductChange = onProductChange;
+window.doDemo  = typeof doDemo  !== 'undefined' ? doDemo  : function(){};
+window.doSetup = typeof doSetup !== 'undefined' ? doSetup : function(){};
 window.loadAllProductsForVenta = loadAllProductsForVenta;
 
 
+
+
+
 </script>
+
+<!-- MODAL PRECIO -->
+<div class="overlay" id="ov-precio" onclick="if(event.target===this)closePrecio()">
+  <div class="modal">
+    <div class="modal-title">💰 Editar precio neto</div>
+    <input type="hidden" id="precio-id">
+    <div id="precio-prod-name" style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:16px;padding:12px;background:var(--surface2);border-radius:8px"></div>
+    <label>Precio neto por unidad / kg</label>
+    <input type="number" id="precio-val" min="0" step="1" placeholder="0">
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closePrecio()">Cancelar</button>
+      <button class="btn-ok bok-ven" onclick="savePrecio()">Guardar precio</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
