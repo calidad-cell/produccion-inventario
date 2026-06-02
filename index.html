@@ -3,8 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Gestión de Inventario - ANMICODA</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -417,11 +415,9 @@ tbody tr:hover { background: var(--surface2); }
       <div class="filters">
         <select id="f-type" onchange="renderMovs()">
           <option value="">Todos los tipos</option>
-          <option value="entrada">Entrada</option>
+          <option value="recepcion">Recepción</option>
+          <option value="produccion">Producción</option>
           <option value="venta">Venta</option>
-          <option value="salida">Salida</option>
-          <option value="merma">Merma</option>
-          <option value="produccion">Produccion</option>
         </select>
         <select id="f-prod" onchange="renderMovs()"><option value="">Todos los productos</option></select>
         <input type="date" id="f-date" onchange="renderMovs()">
@@ -513,76 +509,71 @@ tbody tr:hover { background: var(--surface2); }
 <!-- MODAL MOVIMIENTO -->
 <div class="overlay" id="ov-mov" onclick="if(event.target===this)closeMov()">
   <div class="modal">
-    <div class="modal-title"><span id="mov-icon">📥</span><span id="mov-ttl">Registrar entrada</span></div>
+    <div class="modal-title"><span id="mov-icon">📥</span><span id="mov-ttl">Recepción de insumos</span></div>
 
-    <label>Proteina</label>
-    <select id="mov-proteina" onchange="onProteinaChange()">
-      <option value="">Seleccionar proteina...</option>
-      <option value="prot-salmon">Salmon</option>
-      <option value="prot-pollo">Pollo</option>
-      <option value="prot-jaiba">Jaiba</option>
-      <option value="prot-tocino">Tocino</option>
-      <option value="prot-camaron">Camaron</option>
-      <option value="prot-pulpo">Pulpo</option>
-      <option value="prot-carne">Carne</option>
-    </select>
-
-    <label>Producto</label>
-    <select id="mov-prod" onchange="onProductChange()" disabled>
-      <option value="">Primero selecciona proteina</option>
-    </select>
-
-
-
-    <div id="mov-single">
-      <label>Cantidad <span id="mov-unit-lbl" style="color:var(--blue-600);font-weight:700">(kg)</span></label>
-      <input type="number" id="mov-qty" min="0.01" step="0.01" placeholder="0.00">
-    </div>
-
-    <div id="mov-dual" style="display:none">
-      <div style="background:var(--blue-100);border-radius:8px;padding:10px 12px;font-size:12px;color:var(--blue-700);margin-top:10px;margin-bottom:4px">
-        Este producto registra <strong>unidades</strong> y <strong>kg totales</strong> por separado
-      </div>
-      <label>Cantidad (unidades)</label>
-      <input type="number" id="mov-qty-u" min="1" step="1" placeholder="Numero de unidades">
-      <label>Peso total (kg)</label>
-      <input type="number" id="mov-qty-kg" min="0.01" step="0.01" placeholder="Peso total en kg">
-    </div>
-
-    <div id="mov-tipo-salida-wrap" style="display:none">
-      <label>Tipo de salida</label>
-      <select id="mov-tipo-salida">
-        <option value="merma">Merma</option>
-        <option value="produccion">Produccion</option>
+    <!-- PROTEINA (recepcion y produccion) -->
+    <div id="mov-sec-proteina">
+      <label>Proteína</label>
+      <select id="mov-proteina" onchange="onProteinaChange()">
+        <option value="">Seleccionar proteína...</option>
+        <option value="prot-salmon">Salmón</option>
+        <option value="prot-salmon-sp">Salmón sin piel</option>
+        <option value="prot-salmon-cp">Salmón con piel</option>
+        <option value="prot-pollo">Pollo</option>
+        <option value="prot-jaiba">Jaiba</option>
+        <option value="prot-tocino">Tocino</option>
+        <option value="prot-camaron">Camarón</option>
+        <option value="prot-pulpo">Pulpo</option>
+        <option value="prot-carne">Carne</option>
       </select>
     </div>
 
-    <label id="mov-plbl">Precio neto unitario <span id="mov-price-ref" style="font-size:11px;color:var(--blue-600)"></span></label>
-    <input type="number" id="mov-price" min="0" step="1" placeholder="0">
+    <!-- PRODUCTO (solo produccion y venta) -->
+    <div id="mov-sec-producto" style="display:none">
+      <label>Producto</label>
+      <select id="mov-prod" onchange="onProductChange()" disabled>
+        <option value="">Primero selecciona proteína</option>
+      </select>
+    </div>
+
+    <!-- CANTIDAD con selector kg/porcion -->
+    <div id="mov-sec-cantidad">
+      <label>Cantidad</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="mov-qty" min="0.01" step="0.01" placeholder="0.00" style="flex:1">
+        <select id="mov-unidad" style="width:110px;padding:9px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;outline:none">
+          <option value="kg">kg</option>
+          <option value="porcion">Porción</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- MERMA (solo produccion) -->
+    <div id="mov-sec-merma" style="display:none">
+      <label>Merma</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="number" id="mov-merma" min="0" step="0.01" placeholder="0.00" style="flex:1">
+        <select id="mov-merma-unidad" style="width:110px;padding:9px 10px;border-radius:8px;border:1.5px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;outline:none">
+          <option value="kg">kg</option>
+          <option value="porcion">Porción</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- PRECIO (solo venta) -->
+    <div id="mov-sec-precio" style="display:none">
+      <label>Precio neto <span id="mov-price-ref" style="font-size:11px;color:var(--blue-600)"></span></label>
+      <input type="number" id="mov-price" min="0" step="1" placeholder="0">
+    </div>
 
     <label>Notas</label>
     <textarea id="mov-notes" placeholder="Opcional..."></textarea>
     <label>Registrado por</label>
     <input type="text" id="mov-user" placeholder="Nombre">
+
     <div class="modal-btns">
       <button class="btn-cancel" onclick="closeMov()">Cancelar</button>
       <button class="btn-ok" id="mov-ok" onclick="saveMov()">Confirmar</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL PRECIO -->
-<div class="overlay" id="ov-precio" onclick="if(event.target===this)closePrecio()">
-  <div class="modal">
-    <div class="modal-title">💰 Editar precio neto</div>
-    <input type="hidden" id="precio-id">
-    <div id="precio-prod-name" style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:16px;padding:12px;background:var(--surface2);border-radius:8px"></div>
-    <label>Precio neto por unidad / kg</label>
-    <input type="number" id="precio-val" min="0" step="1" placeholder="0">
-    <div style="font-size:12px;color:var(--muted);margin-top:6px">Ingresa el precio sin IVA en pesos chilenos</div>
-    <div class="modal-btns">
-      <button class="btn-cancel" onclick="closePrecio()">Cancelar</button>
-      <button class="btn-ok bok-ven" onclick="savePrecio()">Guardar precio</button>
     </div>
   </div>
 </div>
@@ -805,7 +796,9 @@ const INIT_PRODUCTS = [
 
 const CATALOG = {
   proteinas: [
-    {id:'prot-salmon',  name:'Salmon'},
+    {id:'prot-salmon',    name:'Salmon'},
+    {id:'prot-salmon-sp', name:'Salmon sin piel'},
+    {id:'prot-salmon-cp', name:'Salmon con piel'},
     {id:'prot-pollo',   name:'Pollo'},
     {id:'prot-jaiba',   name:'Jaiba'},
     {id:'prot-tocino',  name:'Tocino'},
@@ -836,8 +829,8 @@ const CATALOG = {
     {id:'mp4',  proteina:'prot-tocino',  name:'Tocino congelado',  unit:'kg',       dual:false, fmt:'Bolsas 500g',            tipo:'Materia prima'},
     {id:'mp5',  proteina:'prot-pulpo',   name:'Pulpo congelado',   unit:'kg',       dual:false, fmt:'Bolsas de kg',           tipo:'Materia prima'},
     {id:'mp6',  proteina:'prot-jaiba',   name:'Jaiba',             unit:'kg',       dual:false, fmt:'Bolsas 500g',            tipo:'Materia prima'},
-    {id:'mp7',  proteina:'prot-salmon',  name:'Salmon sin piel',   unit:'kg',       dual:false, fmt:'Cajas 10kg filetes',     tipo:'Materia prima'},
-    {id:'mp8',  proteina:'prot-salmon',  name:'Salmon con piel',   unit:'kg',       dual:false, fmt:'Cajas 10kg con piel',    tipo:'Materia prima'},
+    {id:'mp7',  proteina:'prot-salmon-sp',  name:'Salmon sin piel',   unit:'kg',       dual:false, fmt:'Cajas 10kg filetes',     tipo:'Materia prima'},
+    {id:'mp8',  proteina:'prot-salmon-cp',  name:'Salmon con piel',   unit:'kg',       dual:false, fmt:'Cajas 10kg con piel',    tipo:'Materia prima'},
   ]
 };
 
@@ -1006,41 +999,40 @@ function savePrecio() {
 }
 
 function onProteinaChange() {
-  const prot = document.getElementById('mov-proteina').value;
-  const prodSel = document.getElementById('mov-prod');
-  const ref = document.getElementById('mov-price-ref');
-  if (!prot) {
-    prodSel.innerHTML = '<option value="">Primero selecciona proteina</option>';
-    prodSel.disabled = true;
-    return;
-  }
-  const prods = CATALOG.productos.filter(function(p){ return p.proteina === prot; });
-  prodSel.innerHTML = prods.map(function(p){
-    return '<option value="'+p.id+'" data-unit="'+p.unit+'" data-dual="'+(p.dual?'1':'0')+'">'+p.name+(p.dual?' (unidades + kg)':' ('+p.unit+')')+'</option>';
+  var prot = document.getElementById('mov-proteina').value;
+  var prodSel = document.getElementById('mov-prod');
+  if (!prot || !prodSel) return;
+  var prods = CATALOG.productos.filter(function(p){ return p.proteina === prot && p.tipo === 'Producto terminado'; });
+  prodSel.innerHTML = '<option value="">Seleccionar producto...</option>' + prods.map(function(p){
+    return '<option value="'+p.id+'" data-unit="'+p.unit+'">'+p.name+'</option>';
   }).join('');
   prodSel.disabled = false;
   onProductChange();
 }
 
 function onProductChange() {
-  const sel = document.getElementById('mov-prod');
+  var sel = document.getElementById('mov-prod');
   if (!sel) return;
-  const opt = sel.options[sel.selectedIndex];
+  var opt = sel.options[sel.selectedIndex];
   if (!opt || !opt.value) return;
-  const isDual = opt.dataset.dual === '1';
-  const unit   = opt.dataset.unit || 'kg';
-  document.getElementById('mov-dual').style.display   = isDual ? 'block' : 'none';
-  document.getElementById('mov-single').style.display = isDual ? 'none'  : 'block';
-  document.getElementById('mov-unit-lbl').textContent = '('+unit+')';
-  const precio = getPrice(opt.value);
-  const ref = document.getElementById('mov-price-ref');
-  if (precio > 0) {
-    ref.textContent = '— ref: $'+precio.toLocaleString('es-CL');
-    document.getElementById('mov-price').value = precio;
-  } else {
-    ref.textContent = '';
-    document.getElementById('mov-price').value = '';
+  // Show price ref for venta
+  var precio = getPrice(opt.value);
+  var ref = document.getElementById('mov-price-ref');
+  if (ref) {
+    ref.textContent = precio > 0 ? '— ref: $'+precio.toLocaleString('es-CL') : '';
   }
+  var priceEl = document.getElementById('mov-price');
+  if (priceEl && precio > 0) priceEl.value = precio;
+}
+
+function loadAllProductsForVenta() {
+  var prodSel = document.getElementById('mov-prod');
+  if (!prodSel) return;
+  var prods = CATALOG.productos.filter(function(p){ return p.tipo === 'Producto terminado'; });
+  prodSel.innerHTML = '<option value="">Seleccionar producto...</option>' + prods.map(function(p){
+    return '<option value="'+p.id+'" data-unit="'+p.unit+'">'+p.name+'</option>';
+  }).join('');
+  prodSel.disabled = false;
 }
 
 
@@ -1237,8 +1229,8 @@ function renderMovs() {
   const em = document.getElementById('movs-empty');
   if (!list.length) { tb.innerHTML=''; em.style.display='block'; return; }
   em.style.display='none';
-  const pc={'entrada':'pill-ent','venta':'pill-ven','salida':'pill-sal','merma':'pill-mer','produccion':'pill-mer'};
-  const pl={'entrada':'Entrada','venta':'Venta','salida':'Salida','merma':'Merma','produccion':'Produccion'};
+  const pc={'recepcion':'pill-ent','produccion':'pill-sal','venta':'pill-ven','entrada':'pill-ent','salida':'pill-sal','merma':'pill-mer'};
+  const pl={'recepcion':'Recepción','produccion':'Producción','venta':'Venta','entrada':'Entrada','salida':'Salida','merma':'Merma'};
   tb.innerHTML = list.map(m => {
     const p = products.find(x=>x.id===m.pid);
     const tot = (Number(m.price||0)*Number(m.qty||0)).toLocaleString('es-CL');
@@ -1328,9 +1320,9 @@ function goTab(tab, btn) {
 function openMov(tipo) {
   curMovType = tipo;
   const cfg = {
-    entrada:{icon:'📥',ttl:'Registrar entrada de stock',plbl:'Costo unitario',okCls:'bok-ent',okTxt:'Confirmar entrada'},
-    venta:  {icon:'💰',ttl:'Registrar venta',plbl:'Precio de venta unitario',okCls:'bok-ven',okTxt:'Confirmar venta'},
-    salida: {icon:'📤',ttl:'Registrar salida / merma',plbl:'Valor unitario',okCls:'bok-sal',okTxt:'Confirmar salida'},
+    recepcion:  {icon:'📥', ttl:'Recepción de insumos',  okCls:'bok-ent', okTxt:'Confirmar recepción'},
+    produccion: {icon:'⚙️', ttl:'Registrar producción',  okCls:'bok-sal', okTxt:'Confirmar producción'},
+    venta:      {icon:'💰', ttl:'Registrar venta',        okCls:'bok-ven', okTxt:'Confirmar venta'},
   };
   const c = cfg[tipo];
   document.getElementById('mov-icon').textContent = c.icon;
@@ -1355,42 +1347,66 @@ function closeMov() { document.getElementById('ov-mov').classList.remove('open')
 // onProductChange moved to proteinas section
 
 async function saveMov() {
-  const pid   = document.getElementById('mov-prod').value;
-  const procEl = document.getElementById('mov-prod-type'); const proc = procEl ? procEl.value : '';
-  const sel    = document.getElementById('mov-prod');
-  const opt    = sel.options[sel.selectedIndex];
-  const isDual = opt && opt.dataset.dual === '1';
-  const qtyU   = isDual ? Number(document.getElementById('mov-qty-u').value)  : 0;
-  const qtyKg  = isDual ? Number(document.getElementById('mov-qty-kg').value) : 0;
-  const qty    = isDual ? qtyKg : Number(document.getElementById('mov-qty').value);
-  if (isDual && (!qtyU || qtyU<=0)) { toast('Ingresa el número de unidades','error'); return; }
-  if (isDual && (!qtyKg || qtyKg<=0)) { toast('Ingresa el peso total en kg','error'); return; }
-  const price = Number(document.getElementById('mov-price').value)||0;
-  const notes = document.getElementById('mov-notes').value.trim();
+  const tipo  = curMovType;
   const user  = document.getElementById('mov-user').value.trim();
-  if (!pid)   { toast('Selecciona un producto','error'); return; }
-  if (!qty||qty<=0) { toast('Ingresa una cantidad válida','error'); return; }
-  const p = products.find(x=>x.id===pid);
-  if ((curMovType==='venta'||curMovType==='salida'||curMovType==='merma') && p && p.stock<qty) {
-    toast('Stock insuficiente: hay '+p.stock+' '+(p.unit||''),'error'); return;
+  const notes = document.getElementById('mov-notes').value.trim();
+  const qty   = Number(document.getElementById('mov-qty').value);
+  const unidad = document.getElementById('mov-unidad') ? document.getElementById('mov-unidad').value : 'kg';
+
+  if (!qty || qty <= 0) { toast('Ingresa una cantidad válida','error'); return; }
+
+  let pid = '', pname = '', proc = '', price = 0, merma = 0, mermaUnidad = 'kg';
+
+  if (tipo === 'recepcion') {
+    // Solo proteina
+    const protSel = document.getElementById('mov-proteina');
+    const protOpt = protSel ? protSel.options[protSel.selectedIndex] : null;
+    if (!protOpt || !protOpt.value) { toast('Selecciona una proteína','error'); return; }
+    pid   = protOpt.value;
+    pname = protOpt.text;
+
+  } else if (tipo === 'produccion') {
+    // Proteina + producto + merma
+    const protSel = document.getElementById('mov-proteina');
+    const protOpt = protSel ? protSel.options[protSel.selectedIndex] : null;
+    if (!protOpt || !protOpt.value) { toast('Selecciona una proteína','error'); return; }
+    const prodSel = document.getElementById('mov-prod');
+    const prodOpt = prodSel ? prodSel.options[prodSel.selectedIndex] : null;
+    if (!prodOpt || !prodOpt.value) { toast('Selecciona un producto','error'); return; }
+    pid   = prodOpt.value;
+    pname = prodOpt.text;
+    proc  = protOpt.text;
+    merma = Number(document.getElementById('mov-merma').value) || 0;
+    mermaUnidad = document.getElementById('mov-merma-unidad') ? document.getElementById('mov-merma-unidad').value : 'kg';
+
+  } else if (tipo === 'venta') {
+    // Solo producto + precio
+    const prodSel = document.getElementById('mov-prod');
+    const prodOpt = prodSel ? prodSel.options[prodSel.selectedIndex] : null;
+    if (!prodOpt || !prodOpt.value) { toast('Selecciona un producto','error'); return; }
+    pid   = prodOpt.value;
+    pname = prodOpt.text;
+    price = Number(document.getElementById('mov-price').value) || 0;
   }
-  const pName = sel.options[sel.selectedIndex] ? sel.options[sel.selectedIndex].text.split(' (')[0] : pid;
-  const dualNote = isDual ? '['+qtyU+' uds | '+qtyKg+' kg] ' : '';
-  var tipoFinal = curMovType;
-  if (curMovType === 'salida') {
-    var tsEl = document.getElementById('mov-tipo-salida');
-    tipoFinal = tsEl ? tsEl.value : 'salida';
-  }
+
   const mov = {
-    id:'mv'+Date.now(), date:new Date().toISOString().slice(0,16).replace('T',' '),
-    pid, pname: pName, proc, tipo:tipoFinal,
-    qty, qtyU: isDual ? qtyU : null,
-    price, notes: dualNote + notes, user
+    id: 'mv'+Date.now(),
+    date: new Date().toISOString().slice(0,16).replace('T',' '),
+    pid, pname, proc, tipo, qty, unidad,
+    merma: merma || null, mermaUnidad: merma ? mermaUnidad : null,
+    price, notes, user
   };
+
   movements.push(mov);
-  if (curMovType==='entrada') p.stock = +(p.stock+qty).toFixed(2);
-  else                        p.stock = +(p.stock-qty).toFixed(2);
-  lastUser = user; ls('lastUser',user);
+
+  // Update stock
+  const p = products.find(x => x.id === pid);
+  if (p) {
+    if (tipo === 'recepcion') p.stock = +(p.stock + qty).toFixed(2);
+    else                      p.stock = +(p.stock - qty).toFixed(2);
+  }
+
+  lastUser = user; ls('lastUser', user);
   closeMov();
   const r = await fbPush('addMovement',{movement:mov,products});
   toast(r.local?'Guardado sin conexión':'Movimiento registrado ✓', r.local?'info':'success');
@@ -1454,6 +1470,7 @@ window.renderProteinas = renderProteinas;
 window.clearF          = clearF;
 window.onProteinaChange= onProteinaChange;
 window.onProductChange = onProductChange;
+window.loadAllProductsForVenta = loadAllProductsForVenta;
 
 
 </script>
