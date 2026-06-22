@@ -908,11 +908,13 @@ async function saveMov() {
     } else if (tipo==='produccion') {
       stockItem.stock = +((stockItem.stock||0) + qty).toFixed(2);
     } else if (tipo==='venta'||tipo==='salida') {
-      if ((stockItem.stock||0) < qty) {
-        toast('Stock insuficiente: hay '+stockItem.stock+' '+stockItem.unit,'error');
+      var disponible = stockItem.stock || 0;
+      if (disponible < qty) {
+        var faltante = +(qty - disponible).toFixed(2);
+        toast('❌ No hay stock suficiente. Disponible: '+disponible+' '+stockItem.unit+' — Faltan: '+faltante+' '+stockItem.unit, 'error');
         return;
       }
-      stockItem.stock = +((stockItem.stock||0) - qty).toFixed(2);
+      stockItem.stock = +(disponible - qty).toFixed(2);
     }
     saveStocks();
   }
@@ -1020,6 +1022,20 @@ window.addEventListener('load',function(){
   renderAll();
   syncAll();
 });
+
+
+// ─── TOAST ───────────────────────────────────────────────
+var _tt;
+function toast(msg, type) {
+  type = type || 'info';
+  var t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg;
+  t.className = 'show ' + type;
+  clearTimeout(_tt);
+  var dur = type === 'error' ? 5000 : 3200;
+  _tt = setTimeout(function(){ t.className=''; }, dur);
+}
 
 // ─── WINDOW EXPORTS ──────────────────────────────────────
 window.goTab=goTab; window.openMov=openMov; window.closeMov=closeMov; window.saveMov=saveMov;
